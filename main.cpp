@@ -9,6 +9,7 @@ unsigned long beepStartTime = 0;             // When beep started
 
 void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
@@ -18,6 +19,7 @@ void loop() {
   if (!isBeeping && currentMillis - previousMillis >= beatInterval) {
     previousMillis = currentMillis;
     tone(BUZZER_PIN, 1000); // Start beep at 1kHz
+    digitalWrite(LED_BUILTIN, HIGH); // Use the builtin led to test silently
     isBeeping = true;
     beepStartTime = currentMillis;
   }
@@ -25,6 +27,7 @@ void loop() {
   // --- Handle stopping the beep ---
   if (isBeeping && currentMillis - beepStartTime >= BEEP_DURATION) {
     noTone(BUZZER_PIN); // Stop beep
+    digitalWrite(LED_BUILTIN, LOW);
     isBeeping = false;
   }
 
