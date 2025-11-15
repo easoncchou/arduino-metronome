@@ -1,18 +1,66 @@
 #define BUZZER_PIN 8   // Passive buzzer on pin 8
-#define BPM 120        // Beats per minute
 #define BEEP_DURATION 100  // How long the beep lasts (ms)
 
-unsigned long beatInterval = 60000UL / BPM;  // Time between beats (ms)
+enum MetronomeState {
+  STATE_SLOW,
+  STATE_MEDIUM,
+  STATE_FAST
+};
+
+MetronomeState currentState = STATE_MEDIUM;
+
+unsigned long beatInterval = 60000UL / 120;  // Time between beats (ms)
 unsigned long previousMillis = 0;            // Last beat time
 bool isBeeping = false;                      // Track if buzzer is on
 unsigned long beepStartTime = 0;             // When beep started
 
+const int buttonPin = 2;
+bool wasPressed = false;  // stores previous button state
+bool isButtonPressed();
+
 void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLDOWN);
 }
 
 void loop() {
+  if (isButtonPressed()) {
+    // ------------------------------
+    //   STATE TRANSITIONS
+    // ------------------------------
+    switch (currentState) {
+      case STATE_SLOW:
+        currentState = STATE_MEDIUM;
+        break;
+
+      case STATE_MEDIUM:
+        currentState = STATE_FAST;
+        break;
+
+      case STATE_FAST:
+        currentState = STATE_SLOW;
+        break;
+    }
+
+    // ------------------------------
+    //   STATE OUTPUT ACTIONS (after transition)
+    // ------------------------------
+    switch (currentState) {
+      case STATE_SLOW:
+        beatInterval = 60000UL / 60;
+        break;
+
+      case STATE_MEDIUM:
+        beatInterval = 60000UL / 120;
+        break;
+
+      case STATE_FAST:
+        beatInterval = 60000UL / 180;
+        break;
+    }
+  }
+
   unsigned long currentMillis = millis();
 
   // --- Handle starting a beat ---
@@ -32,4 +80,18 @@ void loop() {
   }
 
   // (You can do other tasks here, like read buttons or update LEDs)
+}
+
+// Detects rising edge: returns true once when button goes from LOW → HIGH
+bool isButtonPressed() {
+  bool buttonState = digitalRead(buttonPin);
+  bool pressed = false;
+
+  if (buttonState && !wasPressed) {
+    // Button just pressed
+    pressed = true;
+  }
+
+  wasPressed = buttonState;  // update last state
+  return pressed;
 }
