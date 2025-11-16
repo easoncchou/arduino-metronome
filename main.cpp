@@ -2,26 +2,29 @@
 #define BEEP_DURATION 100  // How long the beep lasts (ms)
 
 enum MetronomeState {
+  STATE_OFF,
   STATE_SLOW,
   STATE_MEDIUM,
   STATE_FAST
 };
 
-MetronomeState currentState = STATE_MEDIUM;
+MetronomeState currentState = STATE_OFF;
+bool isOff = false;
 
 unsigned long beatInterval = 60000UL / 120;  // Time between beats (ms)
 unsigned long previousMillis = 0;            // Last beat time
 bool isBeeping = false;                      // Track if buzzer is on
 unsigned long beepStartTime = 0;             // When beep started
 
-const int buttonPin = 2;
+const int buttonPin = 10;
 bool wasPressed = false;  // stores previous button state
 bool isButtonPressed();
 
 void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(buttonPin, INPUT_PULLDOWN);
+  pinMode(buttonPin, INPUT_PULLUP);
+  Serial.begin(9600);
 }
 
 void loop() {
@@ -29,42 +32,41 @@ void loop() {
     // ------------------------------
     //   STATE TRANSITIONS
     // ------------------------------
-      switch (currentState) {
-  	    case STATE_OFF:
-          currentState = STATE_SLOW;
-          break;
-        case STATE_SLOW:
-          currentState = STATE_MEDIUM;
-          break;
-        case STATE_MEDIUM:
-          currentState = STATE_FAST;
-          break;
-        case STATE_FAST:
-          currentState = STATE_OFF;
-          break;
-      }
-      // ------------------------------
-      //   STATE OUTPUT ACTIONS (after transition)
-      // ------------------------------
-      switch (currentState) {
-  	    case STATE_OFF:
-          isOff = true;
-          break;
-        case STATE_SLOW:
-          isOff = true;
-          beatInterval = 60000UL / 60;
-          break;
-        case STATE_MEDIUM:
-          isOff = true;
-          beatInterval = 60000UL / 120;
-          break;
-        case STATE_FAST:
-          isOff = true;
-          beatInterval = 60000UL / 180;
-          break;
-      }
+    switch (currentState) {
+      case STATE_OFF:
+        currentState = STATE_SLOW;
+        break;
+      case STATE_SLOW:
+        currentState = STATE_MEDIUM;
+        break;
+      case STATE_MEDIUM:
+        currentState = STATE_FAST;
+        break;
+      case STATE_FAST:
+        currentState = STATE_OFF;
+        break;
     }
-
+    // ------------------------------
+    //   STATE OUTPUT ACTIONS (after transition)
+    // ------------------------------
+    switch (currentState) {
+      case STATE_OFF:
+        isOff = true;
+        break;
+      case STATE_SLOW:
+        isOff = false;
+        beatInterval = 60000UL / 60;
+        break;
+      case STATE_MEDIUM:
+        isOff = false;
+        beatInterval = 60000UL / 120;
+        break;
+      case STATE_FAST:
+        isOff = false;
+        beatInterval = 60000UL / 180;
+        break;
+    }
+  }
 
   unsigned long currentMillis = millis();
 
@@ -84,12 +86,16 @@ void loop() {
       digitalWrite(LED_BUILTIN, LOW);
       isBeeping = false;
     }
+  } else {
+    noTone(BUZZER_PIN); // Stop beep
+    digitalWrite(LED_BUILTIN, LOW);
+    isBeeping = false;
   }
 }
 
 // Detects rising edge: returns true once when button goes from LOW → HIGH
 bool isButtonPressed() {
-  bool buttonState = digitalRead(buttonPin);
+  bool buttonState = !digitalRead(buttonPin);
   bool pressed = false;
 
   if (buttonState && !wasPressed) {
