@@ -29,57 +29,62 @@ void loop() {
     // ------------------------------
     //   STATE TRANSITIONS
     // ------------------------------
-    switch (currentState) {
-      case STATE_SLOW:
-        currentState = STATE_MEDIUM;
-        break;
-
-      case STATE_MEDIUM:
-        currentState = STATE_FAST;
-        break;
-
-      case STATE_FAST:
-        currentState = STATE_SLOW;
-        break;
+      switch (currentState) {
+  	    case STATE_OFF:
+          currentState = STATE_SLOW;
+          break;
+        case STATE_SLOW:
+          currentState = STATE_MEDIUM;
+          break;
+        case STATE_MEDIUM:
+          currentState = STATE_FAST;
+          break;
+        case STATE_FAST:
+          currentState = STATE_OFF;
+          break;
+      }
+      // ------------------------------
+      //   STATE OUTPUT ACTIONS (after transition)
+      // ------------------------------
+      switch (currentState) {
+  	    case STATE_OFF:
+          isOff = true;
+          break;
+        case STATE_SLOW:
+          isOff = true;
+          beatInterval = 60000UL / 60;
+          break;
+        case STATE_MEDIUM:
+          isOff = true;
+          beatInterval = 60000UL / 120;
+          break;
+        case STATE_FAST:
+          isOff = true;
+          beatInterval = 60000UL / 180;
+          break;
+      }
     }
 
-    // ------------------------------
-    //   STATE OUTPUT ACTIONS (after transition)
-    // ------------------------------
-    switch (currentState) {
-      case STATE_SLOW:
-        beatInterval = 60000UL / 60;
-        break;
-
-      case STATE_MEDIUM:
-        beatInterval = 60000UL / 120;
-        break;
-
-      case STATE_FAST:
-        beatInterval = 60000UL / 180;
-        break;
-    }
-  }
 
   unsigned long currentMillis = millis();
 
   // --- Handle starting a beat ---
-  if (!isBeeping && currentMillis - previousMillis >= beatInterval) {
-    previousMillis = currentMillis;
-    tone(BUZZER_PIN, 1000); // Start beep at 1kHz
-    digitalWrite(LED_BUILTIN, HIGH); // Use the builtin led to test silently
-    isBeeping = true;
-    beepStartTime = currentMillis;
+  if (isOff == false) {
+    if (!isBeeping && currentMillis - previousMillis >= beatInterval) {
+      previousMillis = currentMillis;
+      tone(BUZZER_PIN, 1000); // Start beep at 1kHz
+      digitalWrite(LED_BUILTIN, HIGH); // Use the builtin led to test silently
+      isBeeping = true;
+      beepStartTime = currentMillis;
+    }
+  
+    // --- Handle stopping the beep ---
+    if (isBeeping && currentMillis - beepStartTime >= BEEP_DURATION) {
+      noTone(BUZZER_PIN); // Stop beep
+      digitalWrite(LED_BUILTIN, LOW);
+      isBeeping = false;
+    }
   }
-
-  // --- Handle stopping the beep ---
-  if (isBeeping && currentMillis - beepStartTime >= BEEP_DURATION) {
-    noTone(BUZZER_PIN); // Stop beep
-    digitalWrite(LED_BUILTIN, LOW);
-    isBeeping = false;
-  }
-
-  // (You can do other tasks here, like read buttons or update LEDs)
 }
 
 // Detects rising edge: returns true once when button goes from LOW → HIGH
